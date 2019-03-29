@@ -86,7 +86,7 @@ void v_road_light(){
 }
 
 */
-
+/*
 unsigned char h_light[5] = {0x01, 0x04, 0x0A, 0x0C, 0x08};
 unsigned char v_light[5] = {0x08, 0x02, 0x05, 0x03, 0x01};
 
@@ -135,4 +135,64 @@ int main(void)
 		h_road_light();		//수직도로 직진
     }
 }
+*/
+#define H_RED_LED 0x01 << 7
+#define V_RED_LED 0x01
+#define H_YEL_LED 0x01 << 6
+#define V_YEL_LED 0x01 << 1
+#define H_GRE_LED 0x01 << 4
+#define V_GRE_LED 0x01 << 3
 
+enum {H_GO, HtoV_Trans, V_GO, VtoH_Trans};
+
+int main(void){
+	DDRD = 0xFF;
+	DDRF = 0xFF;
+	uint8_t  time = 0;
+	int state = H_GO;
+	
+	while(1){
+		switch(state){
+		case H_GO:
+			PORTD = H_GRE_LED | V_RED_LED;
+			PORTF = H_GRE_LED | V_RED_LED;
+			_delay_ms(1000);
+			time++;
+			if(time >= 5){
+				time = 0;
+				state = HtoV_Trans;
+			}
+			break;
+		case HtoV_Trans:
+			PORTD = H_YEL_LED | V_RED_LED;
+			PORTF = H_YEL_LED | V_RED_LED;
+			_delay_ms(1000);
+			time++;
+			if(time >= 1){
+				time = 0;
+				state = V_GO;
+			}
+			break;
+		case V_GO:
+			PORTD = V_GRE_LED | H_RED_LED;
+			PORTF = V_GRE_LED | H_RED_LED;
+			_delay_ms(1000);
+			time++;
+			if(time >= 5){
+				time = 0;
+				state = VtoH_Trans;
+			}
+			break;
+		case VtoH_Trans:
+			PORTD = V_YEL_LED | H_RED_LED;
+			PORTF = V_YEL_LED | H_RED_LED;
+			_delay_ms(1000);
+			time++;
+			if(time >= 1){
+				time = 0;
+				state = H_GO;
+			}
+			break;
+		}
+	}
+}
