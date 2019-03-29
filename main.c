@@ -1,9 +1,9 @@
 /*
- * Traffic_light.c
- *
- * Created: 2019-03-28 오후 2:25:30
- * Author : kccistc
- */ 
+* Traffic_light.c
+*
+* Created: 2019-03-28 오후 2:25:30
+* Author : kccistc
+*/
 #define F_CPU 16000000UL
 #include <avr/io.h>
 #include <util/delay.h>
@@ -26,14 +26,14 @@
 void h_road_light(){		//수평도로 차례
 	PORTD = (0x01 << V_RED);
 	PORTF = (0x01 << V_RED);		//수직도로에 적색 점등.
-	
+
 	//직진 신호
 	PORTD |= (0x01 << H_GRE);
 	PORTF |= (0x01 << H_GRE);		//수평도로에 녹색 점등.
 	_delay_ms(5000);
 	PORTD &= ~(0x01 << H_GRE);
 	PORTF &= ~(0x01 << H_GRE);		//녹색 소등
-	
+
 	//좌회전 신호
 	PORTD |= (0x01 << H_YEL);
 	PORTF |= (0x01 << H_YEL);		//수평도로에 황색 점등.
@@ -45,7 +45,7 @@ void h_road_light(){		//수평도로 차례
 	_delay_ms(3000);
 	PORTD &= ~(0x01 << H_DIR);
 	PORTF &= ~(0x01 << H_DIR);		//녹색화살표 소등.
-	
+
 	//정지 신호
 	PORTD |= (0x01 << H_YEL);
 	PORTF |= (0x01 << H_YEL);
@@ -57,14 +57,14 @@ void h_road_light(){		//수평도로 차례
 void v_road_light(){
 	PORTD = (0x01 << H_RED);
 	PORTF = (0x01 << H_RED);		//수평도로에 적색 점등.
-	
+
 	//직진 신호
 	PORTD |= (0x01 << V_GRE);
 	PORTF |= (0x01 << V_GRE);		//수직도로에 녹색 점등.
 	_delay_ms(5000);
 	PORTD &= ~(0x01 << V_GRE);
 	PORTF &= ~(0x01 << V_GRE);		//녹색 소등
-	
+
 	//좌회전 신호
 	PORTD |= (0x01 << V_YEL);
 	PORTF |= (0x01 << V_YEL);		//수직도로에 황색 점등.
@@ -76,7 +76,7 @@ void v_road_light(){
 	_delay_ms(3000);
 	PORTD &= ~(0x01 << V_DIR);
 	PORTF &= ~(0x01 << V_DIR);		//녹색화살표 소등.
-	
+
 	//정지 신호
 	PORTD |= (0x01 << V_YEL);
 	PORTF |= (0x01 << V_YEL);
@@ -93,14 +93,14 @@ unsigned char v_light[5] = {0x08, 0x02, 0x05, 0x03, 0x01};
 void delay_time(int i){
 	switch(i){
 		case 0:
-			_delay_ms(5000);
-			break;
+		_delay_ms(5000);
+		break;
 		case 1:
 		case 3:
-			_delay_ms(1000);
-			break;
+		_delay_ms(1000);
+		break;
 		case 2:
-			_delay_ms(3000);
+		_delay_ms(3000);
 		break;
 	}
 }
@@ -128,12 +128,12 @@ int main(void)
 	DDRF = 0xFF;
 	PORTD = 0x00;
 	PORTF = 0x00;
-    while (1) 
-    {
+	while (1)
+	{
 		v_road_light();		//수평도로 직진
 		_delay_ms(100);
 		h_road_light();		//수직도로 직진
-    }
+	}
 }
 */
 #define H_RED_LED 0x01 << 7
@@ -143,55 +143,71 @@ int main(void)
 #define H_GRE_LED 0x01 << 4
 #define V_GRE_LED 0x01 << 3
 
-enum {H_GO, HtoV_Trans, V_GO, VtoH_Trans};
+enum {H_GO, HtoV_Trans, V_GO, VtoH_Trans} state;
+
+void count_time(uint8_t *time){
+	_delay_ms(1000);
+	(*time)++;
+}
+
+void light_H_GO(uint8_t *time){
+	PORTD = H_GRE_LED | V_RED_LED;
+	PORTF = H_GRE_LED | V_RED_LED;
+	count_time(time);
+	if(*time >= 5){
+		*time = 0;
+		state = HtoV_Trans;
+	}
+}
+
+void light_HtoV(uint8_t *time){
+	PORTD = H_YEL_LED | V_RED_LED;
+	PORTF = H_YEL_LED | V_RED_LED;
+	count_time(time);
+	if(*time >= 1){
+		*time = 0;
+		state = V_GO;
+	}
+}
+
+void light_V_GO(uint8_t *time){
+	PORTD = V_GRE_LED | H_RED_LED;
+	PORTF = V_GRE_LED | H_RED_LED;
+	count_time(time);
+	if(*time >= 5){
+		*time = 0;
+		state = VtoH_Trans;
+	}
+}
+
+void light_VtoH(uint8_t *time){
+	PORTD = V_YEL_LED | H_RED_LED;
+	PORTF = V_YEL_LED | H_RED_LED;
+	count_time(time);
+	if(*time >= 1){
+		*time = 0;
+		state = H_GO;
+	}
+}
 
 int main(void){
 	DDRD = 0xFF;
 	DDRF = 0xFF;
 	uint8_t  time = 0;
-	int state = H_GO;
 	
 	while(1){
 		switch(state){
 		case H_GO:
-			PORTD = H_GRE_LED | V_RED_LED;
-			PORTF = H_GRE_LED | V_RED_LED;
-			_delay_ms(1000);
-			time++;
-			if(time >= 5){
-				time = 0;
-				state = HtoV_Trans;
-			}
+			light_H_GO(&time);
 			break;
 		case HtoV_Trans:
-			PORTD = H_YEL_LED | V_RED_LED;
-			PORTF = H_YEL_LED | V_RED_LED;
-			_delay_ms(1000);
-			time++;
-			if(time >= 1){
-				time = 0;
-				state = V_GO;
-			}
+			light_HtoV(&time);
 			break;
 		case V_GO:
-			PORTD = V_GRE_LED | H_RED_LED;
-			PORTF = V_GRE_LED | H_RED_LED;
-			_delay_ms(1000);
-			time++;
-			if(time >= 5){
-				time = 0;
-				state = VtoH_Trans;
-			}
+			light_V_GO(&time);
 			break;
 		case VtoH_Trans:
-			PORTD = V_YEL_LED | H_RED_LED;
-			PORTF = V_YEL_LED | H_RED_LED;
-			_delay_ms(1000);
-			time++;
-			if(time >= 1){
-				time = 0;
-				state = H_GO;
-			}
+			light_VtoH(&time);
 			break;
 		}
 	}
